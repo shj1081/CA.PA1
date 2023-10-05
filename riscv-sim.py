@@ -1,10 +1,10 @@
 import sys
 
 """
-function to read binary file from parameter and put it into array of 32bit binary string (convet to big endian)
+function to read binary file from parameter and put it into array of 32bit binary string (convert to big endian)
 """
 def read_binary_file(file_path):
-        
+    try:   
         binary_data = []
         with open(file_path, 'rb') as binary_file:
            
@@ -19,6 +19,12 @@ def read_binary_file(file_path):
                 binary_data.append(binary_value)
 
         return binary_data
+     
+    except FileNotFoundError:
+        print(f"File not found: {file_path}")
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        return None
 
 def binary_to_hex(binary_str):
 
@@ -159,9 +165,9 @@ def binary_to_instruction(binary_str):
         rd = binary_str[20:25]
         imm = binary_str[0:20]+"000000000000"
 
-        if opcode == "0110111":  # LUI
+        if opcode == "0110111": 
             return f"lui x{int(rd, 2)}, {imm_to_int(imm)}"
-        elif opcode == "0010111":  # AUIPC
+        elif opcode == "0010111": 
             return f"auipc x{int(rd, 2)}, {imm_to_int(imm)}"
 
 
@@ -175,21 +181,21 @@ def binary_to_instruction(binary_str):
 
 
 """
-Execution area
+Main code
 """
-# check if there is no parameter
-if len(sys.argv) < 2:
-    print("File open error ((null))")
-    sys.exit(1)
-
-# get bin file and make an array of binary instruction
-binary_file_path = sys.argv[1]
-binary_data = read_binary_file(binary_file_path)
-instruction_number = 0
-
-# iterating to convert binary instructions to RISC-V assembly
-for binary_instruction in binary_data:
-    hex_instruction = binary_to_hex(binary_instruction)
-    assembly_instruction = binary_to_instruction(binary_instruction)
-    print(f"inst {instruction_number}: {hex_instruction} {assembly_instruction}")
-    instruction_number += 1
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python3 riscv-sim.py <binary_file_path>")
+        sys.exit(1)
+    else:
+        binary_file_path = sys.argv[1]
+        binary_data = read_binary_file(binary_file_path)
+        if binary_data is not None:            
+            instruction_number = 0
+            
+            # iterating to convert binary instructions to RISC-V assembly
+            for binary_instruction in binary_data:
+                hex_instruction = binary_to_hex(binary_instruction)
+                assembly_instruction = binary_to_instruction(binary_instruction)
+                print(f"inst {instruction_number}: {hex_instruction} {assembly_instruction}")
+                instruction_number += 1
