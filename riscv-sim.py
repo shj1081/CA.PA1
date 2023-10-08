@@ -3,52 +3,58 @@ import sys
 """
 function to read binary file from parameter and put it into array of 32bit binary string (convert to big endian)
 """
+
+
 def read_binary_file(file_path):
-    try:   
+    try:
         binary_data = []
-        with open(file_path, 'rb') as binary_file:
-           
+        with open(file_path, "rb") as binary_file:
             while True:
                 chunk = binary_file.read(4)  # Read 4 bytes (32 bits) at a time
                 if not chunk:
                     break
-                
+
                 # Convert the 32 bits into a binary string (little endian to big endian)
-                value = int.from_bytes(chunk, byteorder='little', signed=False)
-                binary_value = format(value, '032b')
+                value = int.from_bytes(chunk, byteorder="little", signed=False)
+                binary_value = format(value, "032b")
                 binary_data.append(binary_value)
 
         return binary_data
-     
+
     except FileNotFoundError:
         print(f"File not found: {file_path}")
     except Exception as e:
         print(f"An error occurred: {str(e)}")
         return None
 
-def binary_to_hex(binary_str):
 
+def binary_to_hex(binary_str):
     # binary to int to hex
     decimal_value = int(binary_str, 2)
-    hex_value = format(decimal_value, '08x')  #8 characters wide, lowercase hex
+    hex_value = format(decimal_value, "08x")  # 8 characters wide, lowercase hex
     return hex_value
+
 
 """
 function to convert immediate type from binary string (2's complement) to integer
 """
+
+
 def imm_to_int(binary_str):
-    
     # Check if it's a negative number (2's complement)
-    if binary_str[0] == '1':
-        inverted_str = ''.join(['1' if bit == '0' else '0' for bit in binary_str])
+    if binary_str[0] == "1":
+        inverted_str = "".join(["1" if bit == "0" else "0" for bit in binary_str])
         absolute_value = int(inverted_str, 2) + 1
         return -absolute_value
     else:
         return int(binary_str, 2)
 
+
 """
 function to convert binary instructions to assembly instructions
 """
+
+
 def binary_to_instruction(binary_str):
     opcode = binary_str[25:32]
 
@@ -89,7 +95,6 @@ def binary_to_instruction(binary_str):
         imm = binary_str[0:12]
 
         if opcode == "0010011":
-
             if funct3 == "000":
                 return f"addi x{int(rd, 2)}, x{int(rs1, 2)}, {imm_to_int(imm)}"
             elif funct3 == "010":
@@ -110,7 +115,6 @@ def binary_to_instruction(binary_str):
                 return f"srai x{int(rd, 2)}, x{int(rs1, 2)}, {int(imm[7:],2)}"
 
         elif opcode == "0000011":
-
             if funct3 == "000":
                 return f"lb x{int(rd, 2)}, {imm_to_int(imm)}(x{int(rs1, 2)})"
             elif funct3 == "001":
@@ -123,7 +127,6 @@ def binary_to_instruction(binary_str):
                 return f"lhu x{int(rd, 2)}, {imm_to_int(imm)}(x{int(rs1, 2)})"
 
         elif opcode == "1100111" and funct3 == "000":
-            
             return f"jalr x{int(rd, 2)}, {imm_to_int(imm)}(x{int(rs1, 2)})"
 
     # S-Type Instructions
@@ -145,7 +148,7 @@ def binary_to_instruction(binary_str):
         funct3 = binary_str[17:20]
         rs1 = binary_str[12:17]
         rs2 = binary_str[7:12]
-        imm = binary_str[0] + binary_str[24] + binary_str[1:7] + binary_str[20:24]+"0"
+        imm = binary_str[0] + binary_str[24] + binary_str[1:7] + binary_str[20:24] + "0"
 
         if funct3 == "000":
             return f"beq x{int(rs1, 2)}, x{int(rs2, 2)}, {imm_to_int(imm)}"
@@ -163,20 +166,21 @@ def binary_to_instruction(binary_str):
     # U-Type Instructions
     elif opcode in {"0110111", "0010111"}:
         rd = binary_str[20:25]
-        imm = binary_str[0:20]+"000000000000"
+        imm = binary_str[0:20] + "000000000000"
 
-        if opcode == "0110111": 
+        if opcode == "0110111":
             return f"lui x{int(rd, 2)}, {imm_to_int(imm)}"
-        elif opcode == "0010111": 
+        elif opcode == "0010111":
             return f"auipc x{int(rd, 2)}, {imm_to_int(imm)}"
-
 
     # UJ-type Instructions
     elif opcode == "1101111":
         rd = binary_str[20:25]
-        imm = binary_str[0] + binary_str[12:20] + binary_str[11] + binary_str[1:11]+"0"
+        imm = (
+            binary_str[0] + binary_str[12:20] + binary_str[11] + binary_str[1:11] + "0"
+        )
         return f"jal x{int(rd, 2)}, {imm_to_int(imm)}"
-    
+
     return "unknown instruction"
 
 
@@ -190,12 +194,14 @@ if __name__ == "__main__":
     else:
         binary_file_path = sys.argv[1]
         binary_data = read_binary_file(binary_file_path)
-        if binary_data is not None:            
+        if binary_data is not None:
             instruction_number = 0
-            
+
             # iterating to convert binary instructions to RISC-V assembly
             for binary_instruction in binary_data:
                 hex_instruction = binary_to_hex(binary_instruction)
                 assembly_instruction = binary_to_instruction(binary_instruction)
-                print(f"inst {instruction_number}: {hex_instruction} {assembly_instruction}")
+                print(
+                    f"inst {instruction_number}: {hex_instruction} {assembly_instruction}"
+                )
                 instruction_number += 1
